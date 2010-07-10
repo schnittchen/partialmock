@@ -1,0 +1,6 @@
+Use Partialmock in your RUnit testcase to
+* break a recursion for testing
+* assert that a different module's methods are used as intended by the code to be tested, tracking parameters passed
+  and values returned. (this usage is only recommended if the other module can be tested independently)
+
+This code is currently not licensed. Please contact me if you consider using it and need the code to be available under some open source license.
