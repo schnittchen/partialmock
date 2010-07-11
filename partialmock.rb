@@ -12,6 +12,16 @@ module PartialMock
 	def self.define_mockmeth(slot, in_instance = false, &block)
 	end
 
+	#The object for which the current mockmeth is called.
+	#Only valid in the case in_instance == false.
+	def self.current_object
+	end
+
+	#The method the current mockmeth is replacing.
+	#Only valid in the case in_instance == false.
+	def self.current_method
+	end
+
 	#Hook mock method denoted by slot onto obj as method meth.
 	#Saves the original method internally the first time called with the combination [obj, meth].
 	#If restore is true, the original method will be restored immediately prior to
@@ -20,6 +30,7 @@ module PartialMock
 	end
 
 	#Invoke obj's original meth method. Inside that method, __method__ will not equal meth!
+	#Only possible if obj's method meth is hooked.
 	def self.invoke_backup(obj, meth, *args)
 	end
 
@@ -42,6 +53,7 @@ module PartialMock
 	#Reset module for next use:
 	#* unregister TestCase object and restore its teardown method
 	#* restore all original methods on objects hook was called for (for all methods not restored already)
+	#* clear mock method slots
 	#* clear module hash
 	def self.wipe
 	end
