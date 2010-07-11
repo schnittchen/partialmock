@@ -13,12 +13,12 @@ module PartialMock
 	end
 
 	#The object for which the current mockmeth is called.
-	#Only valid in the case in_instance == false.
+	#Undefined if not inside a mock method with in_instance == false
 	def self.current_object
 	end
 
 	#The method the current mockmeth is replacing.
-	#Only valid in the case in_instance == false.
+	#Undefined if not inside a mock method with in_instance == false
 	def self.current_method
 	end
 
