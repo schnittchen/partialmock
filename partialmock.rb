@@ -34,7 +34,6 @@ module PartialMock
 
 		def invoke_backup(meth, *args)
 			origmeth = @originals[meth]
-			#XXX do we test against the case in the following line?
 			raise "invoke_backup called on method that has not been hooked" if origmeth.nil?
 			@object.send(@originals[meth], *args)
 		end

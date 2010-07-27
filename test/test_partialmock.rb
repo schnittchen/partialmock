@@ -566,7 +566,6 @@ class Test_mainfeature < Test::Unit::TestCase
 		PartialMock.restore(obj1, :meth2)
 		assert_raise(RuntimeError) { PartialMock.restore(obj1, :meth2) }
 		expect_inv(obj1, :meth2) { obj1.meth2 }
-		assert_raise(RuntimeError) { PartialMock.invoke_backup(obj1, :meth2) }
 		
 		expect_inv(obj1, :meth3, :slot1) { obj1.meth3 }
 		
