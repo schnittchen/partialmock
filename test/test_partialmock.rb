@@ -15,6 +15,12 @@ module TestHelper
 	#obtain a freshly defined PartialMock as partialmock.rb would produce it
 	#called from setup wrapper
 	def blank_module
+		prev_pm = nil
+		begin
+			prev_pm = PartialMock
+		rescue NameError
+		end
+		
 		load "partialmock.rb", true #evaluate inside an anonymous module!
 
 		#obtain the wrapped PartialMock module (see documentation of load) and
@@ -28,6 +34,8 @@ module TestHelper
 # 					end
 				#I cannot help that the line below gives a warning...
 				Object.const_set("PartialMock", mod)
+
+				raise "reloaded PartialMock same as original?" if PartialMock.equal? prev_pm
 				return
 			end
 		end
