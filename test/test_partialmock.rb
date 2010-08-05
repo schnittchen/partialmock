@@ -27,12 +27,8 @@ module TestHelper
 		#transplant it into the global namespace
 		ObjectSpace.each_object(Module) do |mod|
 			if /::PartialMock$/.match mod.name then
-				#commented out, see below
-# 					begin
-# 						Object.remove_const("PartialMock") #otherwise, we get a warning below
-# 					rescue NameError
-# 					end
-				#I cannot help that the line below gives a warning...
+				#suppress warning below:
+				Object.send(:remove_const, "PartialMock") if Object.const_defined? "PartialMock"
 				Object.const_set("PartialMock", mod)
 
 				raise "reloaded PartialMock same as original?" if PartialMock.equal? prev_pm
@@ -55,6 +51,7 @@ module TestHelper
 				apply_modifications
 				send "old setup"
 			end
+			freeze #ensure our module is included last
 		end
 	end
 
@@ -79,10 +76,10 @@ class TestTestHelper < Test::Unit::TestCase
 		include TestHelper
 	end
 
-	def test_it
+	def test_classmapping
 		tc = TestTestHelper_TCStub.new
 
-		assert_equal(23, tc.setup)
+		assert_equal(23, tc.setup) #wrapped setup passes result on
 		first_pm = PartialMock
 		first_ct = PartialMock::Caretaker
 		assert(!first_ct.nil?)
@@ -94,6 +91,12 @@ class TestTestHelper < Test::Unit::TestCase
 		
 		PartialMock.setup_for(tc)
 		assert_same(second_ct, (second_pm.instance_eval { @tcct }).class) #be a little bit invasive here, just to be sure
+	end
+
+	def test_freezeeffect
+		assert_raise(TypeError) do
+			TestTestHelper_TCStub.send(:define_method, :setup) { }
+		end
 	end
 end
 
@@ -648,12 +651,14 @@ class Test_setup_teardown_hooking < Test::Unit::TestCase
 		#prepare and run test
 		tc = TestCase_Stub.new
 
+		PartialMock.send(:remove_const, "WipeBlock") #suppress warning below
 		PartialMock.const_set("WipeBlock", Proc.new do
 			flunk
 		end)
 		PartialMock.setup_for(tc)
 
 		hit = false
+		PartialMock.send(:remove_const, "WipeBlock") #suppress warning below
 		PartialMock.const_set("WipeBlock", Proc.new do
 			hit = true
 		end)
