@@ -1,7 +1,24 @@
+#Modify methods of one or more objects for the time of the current Test::Unit::TestCase
+#test function.
+#This is interesting to use in two situations:
+#* Assert that a function (to be tested) has the side effect of invoking a method on a certain object
+#  (it can even be asserted that a given call-sequences is taken).
+#  This should probably not be used unless the side-effect method(s) can be tested independently.
+#* Break up a recursive method and test the terminating case and the recursing case independently,
+#  instead of (or in addition to) feeding fixtures to the method.
+
+#To be used, PartialMock has to be set up with setup_for in a test or in the setup method.
+#1. Define a template for a method definition using define_mockmeth.
+#2. Hook the template onto a method using hook.
+#3. Hook again or restore the original method.
+#All method modifications will be reverted in the teardown method of the test case.
+#Template definitions can use the original definition of a method, if hook has been used for it,
+#using invoke_original.
+
 module PartialMock
 
 	#--
-	class Caretaker
+	class Caretaker #:nodoc:
 		attr_reader :object
 
 		@@ct_objects = {}
@@ -75,8 +92,12 @@ module PartialMock
 	end
 	#++
 	
-	#Register the current TestCase object. Call this from inside tc's setup method.
-	#This will modify tc's teardown method to call wipe.
+	#Register the current TestCase object. Registering is necessary before
+	#doing anything else. Pass the current Test::Unit::TestCase object, invoking
+	#from inside a test or from inside tc's setup method (but not both).
+	#
+	#The registration is active until <code>wipe</code> is called. Registering will
+	#alter tc's teardown method to eventually call wipe (wipe also undoes this).
 	def self.setup_for(tc)
 		raise "already setup for a TestCase object" unless @tcct.nil?
 		@mocks = {}
@@ -94,9 +115,14 @@ module PartialMock
 	end
 
 	#Define the given block as a mock method.
-	#Denote it by slot, which can be any object.
-	#If in_instance is true, block will be evaluated in the instance the mock method has
-	#been hooked onto.
+	#
+	#The block passed will be used to define a method __template__ that can later be hooked
+	#(with <code>hook</code>)
+	#onto other methods to mask the previous definition. Once hooked, block will be called
+	#in the context of the caller, unless <code>in_instance == true</code> (in which case
+	#it will be evaluated in the instance).
+	#
+	#<code>slot</code> is used as a hash key to be used at hook time.
 	def self.define_mockmeth(slot, in_instance = false, &block)
 		assert_registered
 		raise "already have a mock method in slot #{slot}" if @mocks.has_key?(slot)
@@ -104,21 +130,25 @@ module PartialMock
 	end
 
 	#The object for which the current mockmeth is called.
-	#Undefined if not inside a mock method with in_instance == false
+	#Undefined if not inside a mock method with <code>in_instance == false</code>
 	def self.current_object
 		assert_registered
 		@current_object
 	end
 
 	#The method the current mockmeth is replacing.
-	#Undefined if not inside a mock method with in_instance == false
+	#Undefined if not inside a mock method with <code>in_instance == false</code>
 	def self.current_method
 		assert_registered
 		@current_method
 	end
 
 	#Hook mock method denoted by slot onto obj as method meth.
-	#Saves the original method internally the first time called with the combination [obj, meth].
+	#
+	#Saves the original method internally the first time called
+	#with the combination <code>[obj, meth]</code>.
+	#In other words, hooking onto the same method of the same object more than once
+	#does not alter the effect of invoke_backup and restore (and restore_all).
 	def self.hook(slot, obj, meth)
 		raise "unknown slot #{slot}" unless @mocks.has_key?(slot)
 		ct = @caretakers[obj.object_id]
@@ -149,7 +179,10 @@ module PartialMock
 		end
 	end
 
-	#Invoke obj's original meth method. Inside that method, __method__ will not equal meth!
+	#Invoke obj's original meth method. Inside that method, __<code>method__</code>
+	#-- rdoc workaround above necessary?
+	#++
+	#(see kernel#__method__) will not equal meth!
 	#Only possible if obj's method meth is hooked.
 	def self.invoke_backup(obj, meth, *args)
 		ct = @caretakers[obj.object_id]
@@ -174,13 +207,15 @@ module PartialMock
 		ct.restore_all
 	end
 
-	#Obtain value from module hash.
+	#Obtain value from the module hash.
+	#The hash is cleared on wipe (implicitly, in the teardown method of the TestCase)
 	def self.[](ky)
 		assert_registered
 		@hash[ky]
 	end
 
-	#Store value into module hash.
+	#Store value into the module hash.
+	#The hash is cleared on wipe (implicitly, in the teardown method of the TestCase)
 	def self.[]=(ky, val)
 		assert_registered
 		@hash[ky] = val
@@ -191,6 +226,7 @@ module PartialMock
 	#* restore all original methods on objects hook was called for (for all methods not restored already)
 	#* clear mock method slots
 	#* clear module hash
+	#To use the module again after wipe, use setup_for next.
 	def self.wipe
 		assert_registered
 		@caretakers.each_value { |ct| ct.restore_all }
@@ -198,7 +234,6 @@ module PartialMock
 		clean_state
 	end
 
-	#--
 	#Setup the wiped/unregistered state internally
 	def self.clean_state
 		@hash = {}
@@ -215,8 +250,8 @@ module PartialMock
 
 	class << self
 		private :clean_state
+		private :assert_registered
 	end
 
 	clean_state
-	#++
 end #module PartialMock
