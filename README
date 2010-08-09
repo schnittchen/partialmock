@@ -1,6 +1,10 @@
-Use Partialmock in your RUnit testcase to
-* break a recursion for testing
-* assert that a different module's methods are used as intended by the code to be tested, tracking parameters passed
-  and values returned. (this usage is only recommended if the other module can be tested independently)
+Modify methods of one or more objects for the time of the current Test::Unit::TestCase
+test function.
 
-This code is currently not licensed. Please contact me if you consider using it and need the code to be available under some open source license.
+This is interesting to use in two situations:
+* Assert that a function (to be tested) has the side effect of invoking a method on a certain object (it can even be asserted that a given call-sequences is taken). This should probably not be used unless the side-effect method(s) can be tested independently.
+* Break up a recursive method and test the terminating case and the recursing case independently, instead of (or in addition to) feeding fixtures to the method.
+
+This code is currently not licensed simply because I have not yet decided on a license.
+Please contact me if you consider using it or need the code to be available
+under some open source license.

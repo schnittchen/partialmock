@@ -6,7 +6,7 @@
 #  This should probably not be used unless the side-effect method(s) can be tested independently.
 #* Break up a recursive method and test the terminating case and the recursing case independently,
 #  instead of (or in addition to) feeding fixtures to the method.
-
+#
 #To be used, PartialMock has to be set up with setup_for in a test or in the setup method.
 #1. Define a template for a method definition using define_mockmeth.
 #2. Hook the template onto a method using hook.
